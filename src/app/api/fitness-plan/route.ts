@@ -1,6 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { streamObject } from 'ai';
-import { z } from 'zod';
+import { generateObject, generateText } from 'ai';
+import { object, z } from 'zod';
 import { NextResponse } from 'next/server';
 import dotenv from 'dotenv';
 import { DayPlan, dayPlanSchema } from '@/lib/utils';
@@ -15,10 +15,7 @@ if (!apiKey) {
   );
 }
 
-const googleClient = google('gemini-1.5-pro-latest');
-
-
-
+const googleClient = google('gemini-1.5-flash');
 
 const requestSchema = z.object({
   action: z.enum(['generate', 'edit']),
@@ -93,16 +90,13 @@ async function generateDayPlan(
 
   while (attempts < 3) {
     try {
-      const { partialObjectStream } = await streamObject({
+      const { object } = await generateObject({
         model: googleClient,
         schema: dayPlanSchema,
-        prompt,
+        prompt: prompt,
       });
-
-      let parsedDay;
-      for await (const partialDay of partialObjectStream) {
-        parsedDay = partialDay;
-      }
+    
+      const parsedDay = dayPlanSchema.parse(object);
 
       return parsedDay;
     } catch (error) {
@@ -178,6 +172,7 @@ export async function POST(req: Request) {
         });
       }
 
+      // Generar plan para toda la semana
       const weekDays = [
         'Lunes',
         'Martes',
@@ -189,46 +184,31 @@ export async function POST(req: Request) {
       ];
 
       let context = '';
+      const trainingPlan: DayPlan[] = [];
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            for (const dayName of weekDays) {
-              try {
-                const parsedDay = await generateDayPlan(
-                  dayName,
-                  fitnessGoals,
-                  fitnessLevel,
-                  availableEquipment || '',
-                  context
-                );
+      for (const dayName of weekDays) {
+        try {
+          const parsedDay = await generateDayPlan(
+            dayName,
+            fitnessGoals,
+            fitnessLevel,
+            availableEquipment || '',
+            context
+          );
 
-                context += `\nDía ${dayName}: ${JSON.stringify(parsedDay, null, 2)}`;
+          context += `\nDía ${dayName}: ${JSON.stringify(parsedDay, null, 2)}`;
+          trainingPlan.push(parsedDay);
+        } catch (error) {
+          console.error(`Error generando el plan para ${dayName}:`, error);
+          return NextResponse.json(
+            { error: `No se pudo generar el plan para el día ${dayName}.` },
+            { status: 500 }
+          );
+        }
+      }
 
-                controller.enqueue(
-                  new TextEncoder().encode(JSON.stringify(parsedDay) + '\n')
-                );
-              } catch (error) {
-                controller.error(error);
-                return;
-              }
-            }
-
-            controller.close();
-          } catch (error) {
-            console.error('Error generando el plan de entrenamiento:', error);
-            controller.error(error);
-          }
-        },
-      });
-
-      return new NextResponse(stream, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-          'Transfer-Encoding': 'chunked',
-        },
+      return NextResponse.json(trainingPlan, {
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 

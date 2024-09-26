@@ -14,11 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { z } from 'zod';
-import { Clock, Dumbbell, Zap, RefreshCw, Edit3 } from 'lucide-react';
+import { Clock, Dumbbell, Zap, Edit3 } from 'lucide-react';
 import Modal from './ui/modal';
 import { dayPlanSchema } from '@/lib/utils';
-
-
 
 type DayPlan = z.infer<typeof dayPlanSchema>;
 
@@ -53,58 +51,23 @@ export function TrainingPlanGenerator() {
         }),
       });
 
-      if (!response.ok || !response.body) {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
           errorData.error || 'Error al generar el plan de entrenamiento.'
         );
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let partialData = '';
+      const data = await response.json();
+      const parsedPlan = z.array(dayPlanSchema).parse(data);
 
-      const processStream = async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          partialData += decoder.decode(value, { stream: true });
-          let lines = partialData.split('\n');
-
-          partialData = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.trim()) {
-              try {
-                const parsedDay = dayPlanSchema.parse(JSON.parse(line));
-                setTrainingPlan((prev) => [...prev, parsedDay]);
-              } catch (err) {
-                console.error('Error parsing day data:', err);
-              }
-            }
-          }
-        }
-
-        // Procesar cualquier dato restante
-        if (partialData.trim()) {
-          try {
-            const parsedDay = dayPlanSchema.parse(JSON.parse(partialData));
-            setTrainingPlan((prev) => [...prev, parsedDay]);
-          } catch (err) {
-            console.error('Error parsing remaining day data:', err);
-          }
-        }
-
-        setIsLoading(false);
-      };
-
-      await processStream();
+      setTrainingPlan(parsedPlan);
     } catch (err: any) {
       setError(
         err.message ||
           'No se pudo generar el plan de entrenamiento. Por favor, inténtalo de nuevo.'
       );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -135,7 +98,8 @@ export function TrainingPlanGenerator() {
         );
       }
 
-      const parsedDay = dayPlanSchema.parse(await response.json());
+      const data = await response.json();
+      const parsedDay = dayPlanSchema.parse(data);
 
       setTrainingPlan((prev) =>
         prev.map((day) => (day.day === dayName ? parsedDay : day))
@@ -193,7 +157,8 @@ export function TrainingPlanGenerator() {
         );
       }
 
-      const parsedDay = dayPlanSchema.parse(await response.json());
+      const data = await response.json();
+      const parsedDay = dayPlanSchema.parse(data);
 
       setTrainingPlan((prev) =>
         prev.map((day) => (day.day === parsedDay.day ? parsedDay : day))
@@ -267,15 +232,7 @@ export function TrainingPlanGenerator() {
                   </Badge>
                 </div>
                 <div className="flex space-x-2">
-                  {/* <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => regenerateDayPlan(day.day)}
-                    disabled={loadingDays.includes(day.day)}
-                    title="Regenerar Día"
-                  >
-                    <RefreshCw className="h-5 w-5 text-green-600" />
-                  </Button> */}
+                  {/* Botón de editar */}
                   <Button
                     variant="ghost"
                     size="icon"
