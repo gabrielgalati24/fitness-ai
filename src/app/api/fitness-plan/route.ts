@@ -80,7 +80,7 @@ async function generateDayPlan(
     dayName,
     fitnessGoals,
     fitnessLevel,
-    availableEquipment,
+    "",
     context,
     existingPlan,
     editInstructions
