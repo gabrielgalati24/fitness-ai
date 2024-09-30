@@ -14,9 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { z } from 'zod';
-import { Clock, Dumbbell, Zap, Edit3 } from 'lucide-react';
+import { Clock, Dumbbell, Zap, Edit3, Sparkles } from 'lucide-react';
 import Modal from './ui/modal';
 import { dayPlanSchema } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 type DayPlan = z.infer<typeof dayPlanSchema>;
 
@@ -177,134 +178,162 @@ export function TrainingPlanGenerator() {
   };
 
   return (
-    <div className="container mx-auto p-6 bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen">
-      <Card className="mb-10 shadow-xl border-t-4 border-green-500">
-        <CardHeader className="text-center">
-          <CardTitle className="text-5xl font-extrabold text-green-600">
-            Plan de Entrenamiento IA
-          </CardTitle>
-          <CardDescription className="text-2xl text-gray-700 mt-4">
-            Personaliza tu plan de entrenamiento según tus objetivos y preferencias.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Textarea
-              placeholder="Describe tus objetivos de fitness..."
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              className="min-h-[150px] text-lg p-5 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-500 transition duration-300 ease-in-out"
-              required
-            />
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full text-lg py-4 bg-green-600 hover:bg-green-700 transition-transform transform hover:scale-105 shadow-lg text-white"
-            >
-              {isLoading ? 'Generando Plan...' : 'Generar Plan de Entrenamiento'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Card className="mb-10 border-red-500 shadow-lg">
-          <CardContent className="text-red-500 p-6 text-lg text-center">
-            {error}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="max-w-4xl mx-auto mb-12 overflow-hidden shadow-2xl border-t-4 border-green-500 w-full">
+          <CardHeader className="bg-gradient-to-r from-green-400 to-blue-500 text-white p-8">
+            <CardTitle className="text-4xl sm:text-5xl font-extrabold text-center mb-4">
+              Plan de Entrenamiento IA
+            </CardTitle>
+            <CardDescription className="text-xl sm:text-2xl text-green-100 text-center">
+              Personaliza tu plan de entrenamiento según tus objetivos y preferencias.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Textarea
+                placeholder="Describe tus objetivos de fitness..."
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                className="min-h-[150px] text-lg p-5 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-500 transition duration-300 ease-in-out"
+                required
+              />
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full text-lg py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-white rounded-xl font-semibold"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <Sparkles className="animate-spin mr-2" />
+                    Generando Plan...
+                  </span>
+                ) : (
+                  'Generar Plan de Entrenamiento'
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="max-w-4xl mx-auto mb-12 border-red-500 shadow-lg">
+            <CardContent className="text-red-500 p-6 text-lg text-center">
+              {error}
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
 
       {trainingPlan.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+        >
           {trainingPlan.map((day, index) => (
-            <Card
+            <motion.div
               key={index}
-              className="h-full shadow-lg hover:shadow-2xl transition-shadow duration-500 border-t-4 border-green-400 rounded-2xl relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <CardHeader className="bg-green-50 p-6 rounded-t-2xl flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-3xl font-semibold text-green-600">
-                    {day.day}
-                  </CardTitle>
-                  <Badge variant="secondary" className="text-md py-1 px-4 mt-2">
-                    {day.workout.type}
-                  </Badge>
-                </div>
-                <div className="flex space-x-2">
-                  {/* Botón de editar */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditModal(day)}
-                    disabled={loadingDays.includes(day.day)}
-                    title="Editar Día"
-                  >
-                    <Edit3 className="h-5 w-5 text-blue-600" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 relative">
-                {loadingDays.includes(day.day) ? (
-                  <div className="flex justify-center items-center h-full">
-                    <span className="text-green-600">Procesando...</span>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[300px] pr-3">
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center text-xl text-yellow-600">
-                          <Zap className="mr-2 h-6 w-6" />
-                          Calentamiento
-                        </h4>
-                        <p className="text-gray-700">{day.warmup}</p>
-                      </div>
-                      <Separator className="bg-gray-300" />
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center text-xl text-blue-600">
-                          <Dumbbell className="mr-2 h-6 w-6" />
-                          Entrenamiento
-                        </h4>
-                        <p className="text-gray-700 mb-4">
-                          Duración: {day.workout.durationMinutes} minutos
-                        </p>
-                        <ul className="space-y-3">
-                          {day.workout.exercises.map((exercise, exIndex) => (
-                            <li
-                              key={exIndex}
-                              className="bg-blue-50 p-4 rounded-lg shadow-inner flex flex-col"
-                            >
-                              <span className="font-medium text-blue-700 text-lg">
-                                {exercise.name}
-                              </span>
-                              <span className="text-gray-700">
-                                {exercise.sets} series
-                                {exercise.reps
-                                  ? `, ${exercise.reps} repeticiones`
-                                  : ''}
-                                {exercise.timePerSetMinutes
-                                  ? `, ${exercise.timePerSetMinutes} minutos por serie`
-                                  : ''}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <Separator className="bg-gray-300" />
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center text-xl text-purple-600">
-                          <Clock className="mr-2 h-6 w-6" />
-                          Enfriamiento
-                        </h4>
-                        <p className="text-gray-700">{day.cooldown}</p>
-                      </div>
+              <Card className="h-full shadow-lg hover:shadow-2xl transition-all duration-500 border-t-4 border-green-400 rounded-2xl relative overflow-hidden group">
+                <CardHeader className="bg-gradient-to-r from-green-400 to-blue-500 p-6 rounded-t-2xl">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-3xl font-semibold text-white">
+                        {day.day}
+                      </CardTitle>
+                      <Badge variant="secondary" className="text-md py-1 px-4 mt-2 bg-white text-green-700">
+                        {day.workout.type}
+                      </Badge>
                     </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditModal(day)}
+                      disabled={loadingDays.includes(day.day)}
+                      className="text-white hover:bg-white hover:text-green-600 transition-colors duration-300"
+                      title="Editar Día"
+                    >
+                      <Edit3 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 relative">
+                  {loadingDays.includes(day.day) ? (
+                    <div className="flex justify-center items-center h-[300px]">
+                      <Sparkles className="h-8 w-8 text-green-500 animate-spin" />
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[300px] pr-3">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center text-xl text-yellow-600">
+                            <Zap className="mr-2 h-6 w-6" />
+                            Calentamiento
+                          </h4>
+                          <p className="text-gray-700">{day.warmup}</p>
+                        </div>
+                        <Separator className="bg-gray-300" />
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center text-xl text-blue-600">
+                            <Dumbbell className="mr-2 h-6 w-6" />
+                            Entrenamiento
+                          </h4>
+                          <p className="text-gray-700 mb-4">
+                            Duración: {day.workout.durationMinutes} minutos
+                          </p>
+                          <ul className="space-y-3">
+                            {day.workout.exercises.map((exercise, exIndex) => (
+                              <li
+                                key={exIndex}
+                                className="bg-blue-50 p-4 rounded-lg shadow-inner flex flex-col transform transition-transform duration-300 hover:scale-105"
+                              >
+                                <span className="font-medium text-blue-700 text-lg">
+                                  {exercise.name}
+                                </span>
+                                <span className="text-gray-700">
+                                  {exercise.sets} series
+                                  {exercise.reps
+                                    ? `, ${exercise.reps} repeticiones`
+                                    : ''}
+                                  {exercise.timePerSetMinutes
+                                    ? `, ${exercise.timePerSetMinutes} minutos por serie`
+                                    : ''}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <Separator className="bg-gray-300" />
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center text-xl text-purple-600">
+                            <Clock className="mr-2 h-6 w-6" />
+                            Enfriamiento
+                          </h4>
+                          <p className="text-gray-700">{day.cooldown}</p>
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {isEditModalOpen && editDay && (
@@ -328,7 +357,7 @@ export function TrainingPlanGenerator() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white"
                     disabled={loadingDays.includes(editDay.day)}
                   >
                     {loadingDays.includes(editDay.day) ? 'Guardando...' : 'Guardar Cambios'}
